@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Error Handling
 
-## Getting Started
+### There are two classes of errors that can occur with a Mongoose connection.
 
-First, run the development server:
+### 1. Error on initial connection: If initial connection fails, Mongoose will emit an 'error' event and the promise mongoose.connect() returns will reject. However, Mongoose will not automatically try to reconnect.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+### 2. Error after initial connection was established: Mongoose will attempt to reconnect, and it will emit an 'error' event.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 3. To handle initial connection errors, you should use .catch() or try/catch with async/await.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### mongoose.connect('mongodb://127.0.0.1:27017/test').
+###  catch(error => handleError(error));
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+### Or:
+### try {
+###  await mongoose.connect('mongodb://127.0.0.1:27017/test');
+### } catch (error) {
+###  handleError(error);
+### }
 
-## Learn More
+## 3. Options
+### The connect method also accepts an options object which will be passed on to the underlying MongoDB driver.
 
-To learn more about Next.js, take a look at the following resources:
+### mongoose.connect(uri, options);
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 3.1 serverSelectionTimeoutMS
+### The serverSelectionTimeoutMS option is extremely important: it controls how long the MongoDB Node.js driver will attempt to retry any operation before erroring out. This includes initial connection, like await mongoose.connect(), as well as any operations that make requests to MongoDB, like save() or find().
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+### By default, serverSelectionTimeoutMS is 30000 (30 seconds). This means that, for example, if you call mongoose.connect() when your standalone MongoDB server is down, your mongoose.connect() call will only throw an error after 30 seconds.
 
-## Deploy on Vercel
+### mongoose.connect(uri, {
+###  serverSelectionTimeoutMS: 5000
+### });
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## https://mongoosejs.com/docs/connections.html#error-handling
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+
+
+# SignUp
+
+## Code should effectively handles both scenarios of registering a new user and updating an existing but unverified user account with a new password and verification code.
+
+## Algorithm :
+### IF existingUserByEmail EXISTS THEN
+###   IF existingUserByEmail.isVerified Then
+###     success: false;
+###   ELSE
+###     save the updated user;
+###   END IF
+###   ELSE
+###     create a new user with the provided details
+###     save the new user
+### END IF
